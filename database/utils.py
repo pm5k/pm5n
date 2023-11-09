@@ -14,7 +14,10 @@ def upsert_expansion(session: Session, expansion: PDExpansion):
         exclusions.append("id")
 
     index_elements = ["id" if expansion.id else "trigger"]
-    clean_expansion = expansion.model_dump(exclude=exclusions)
+    if hasattr(expansion, "model_dump"):
+        clean_expansion = expansion.model_dump(exclude=exclusions)
+    else:
+        clean_expansion = expansion.dict(exclude=exclusions)
     clean_tags = {tag.name for tag in expansion.tags}
 
     exp_stmt = (
