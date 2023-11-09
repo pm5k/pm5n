@@ -38,7 +38,7 @@ Continuing on from the above, now that you're in the virtual environment..
 
     4.b (SSH): `git clone git@github.com:pm5k/pm5n.git`
 
-5. Now change dir once more into the cloned repo via - ```cd pm5n``` and install the requirements for this extension using this command - ```pip install requirements.txt```.
+5. Now change dir once more into the cloned repo via - ```cd pm5n``` and install the requirements for this extension using this command - ```pip install -r requirements.txt```.
 
 6. Once installation completes, simply go back to the ComfyUI root and run comfy the way you normally do.
 
