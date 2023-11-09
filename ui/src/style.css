@@ -1,0 +1,178 @@
+/*
+    Global PM5N UI Styles.
+
+    TODO: Theme support is on the books, for now we are just using an inoffensive custom dark theme..
+*/
+:root {
+    /* Base Palette */
+    --white: #cdcdcd;
+    --black: #161c27;
+    --danger: #e56b6f;
+    --warning: #e1ce66;
+    --success: #00a39b;
+    --primary: #3066be;
+    --secondary: #5a7182;
+
+    /* Designations */
+    --bg: var(--black);
+    --fg: var(--white);
+    --fg-dark: var(--secondary);
+    --bd: var(--secondary);
+    --bd-active: var(--warning);
+
+    /* Sizing */
+    --sm: 0.25rem;
+    --md: 0.5rem;
+    --lg: 1rem;
+
+    --fsm: 0.5rem;
+    --fmd: 0.8rem;
+    --flg: 1.2rem;
+
+    --mgn-small: var(--sm);
+    --mgn-default: var(--md);
+    --mgn-large: var(--lg);
+    --pad-small: var(--sm);
+    --pad-default: var(--md);
+    --pad-large: var(--lg);
+    --rad-small: var(--sm);
+    --rad-default: var(--md);
+    --rad-large: var(--lg);
+
+}
+
+@font-face {
+    font-family: 'Roboto Mono';
+    font-style: normal;
+    src: local('Roboto Mono'), url("./assets/fonts/RobotoMono.ttf");
+}
+
+@font-face {
+    font-family: 'Roboto Mono Italic';
+    font-style: italic;
+    src: local('Roboto Mono Italic'), url("./assets/fonts/RobotoMono.ttf");
+}
+
+/*
+    This is a global override for the UI mount
+    which fixes the box sizing for any UI mounted to it..
+
+    @note:
+
+    The z-index is set to 1000 to ensure that the UI elements,
+    which are essentially dialogs, are always over any other UI element
+    when visible.
+*/
+#p5n-ui {
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    background: none;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+}
+
+/*
+    These are global styles which are supposed to affect all
+    UI elements of a given type to provide a consistent look.
+
+    This includes things like font, border, padding, colors, etc.
+    However we are trying to allow for Svelte components to retain
+    some autonomy in other types of styling which should be scoped
+    to the context of the component itself.
+
+    "Global" in this case means global to the UI mountpoint, not
+    the entire application.
+*/
+#p5n-ui * {
+    font-family: 'Roboto Mono', monospace;
+    box-sizing: border-box !important;
+}
+
+#p5n-ui input,
+#p5n-ui textarea {
+    background-color: var(--bg);
+    border: 2px solid var(--bd);
+    outline: none;
+    color: var(--fg);
+    padding: var(--pad-default);
+    border-radius: var(--rad-small);
+}
+
+#p5n-ui input:focus,
+#p5n-ui textarea:focus {
+    outline: 2px solid var(--bd-active);
+    border-color: transparent;
+}
+
+#p5n-ui .highlight {
+    background-color: var(--warning);
+    color: var(--black);
+}
+
+#p5n-ui .btn {
+    background: none;
+    cursor: pointer;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: var(--rad-default);
+    padding: var(--pad-default);
+    transition: all 0.3s ease-in-out;
+}
+
+#p5n-ui .btn-default {
+    border-color: var(--secondary);
+    color: var(--secondary);
+}
+
+#p5n-ui .btn-default:hover {
+    background-color: var(--secondary);
+    color: var(--fg);
+}
+
+#p5n-ui .btn-ok {
+    border-color: var(--success);
+    color: var(--success);
+}
+
+#p5n-ui .btn-ok:hover {
+    background-color: var(--success);
+    color: var(--bg);
+}
+
+#p5n-ui .btn-warn {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+#p5n-ui .btn-warn:hover {
+    background-color: var(--warning);
+    color: var(--black);
+}
+
+#p5n-ui .btn[disabled] {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+
+/*
+    Utility classes go here..
+*/
+#p5n-ui .text-center {
+    text-align: center;
+}
+
+#p5n-ui .text-right {
+    text-align: right;
+}
+
+#p5n-ui .text-left {
+    text-align: left;
+}
+
+/* This will ensure that any svg icon that needs vertical centering will get it */
+#p5n-ui .svg-middle svg {
+    vertical-align: middle;
+}
