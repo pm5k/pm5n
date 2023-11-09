@@ -9,12 +9,15 @@ def upsert_expansion(session: Session, expansion: PDExpansion):
     # special consideration - if tag carries an id, then it should not be excluded
     # from the model dump, and included in the conflict index elements as "id" instead of "trigger"
 
-    exclusions = ["tags", "image_data"]
+    exclusions = {"tags", "image_data"}
     if not expansion.id:
-        exclusions.append("id")
+        exclusions |= {"id"}
 
     index_elements = ["id" if expansion.id else "trigger"]
-    clean_expansion = expansion.model_dump(exclude=exclusions)
+    if hasattr(expansion, "model_dump"):
+        clean_expansion = expansion.model_dump(exclude=exclusions)
+    else:
+        clean_expansion = expansion.dict(exclude=exclusions)
     clean_tags = {tag.name for tag in expansion.tags}
 
     exp_stmt = (
