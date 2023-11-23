@@ -39,7 +39,7 @@ Continuing on from the above, now that you're in the virtual environment..
 
    4.b (SSH): `git clone git@github.com:pm5k/pm5n.git`
 
-5. Now change dir once more into the cloned repo via - ```cd pm5n``` and install the requirements for this extension using this command - ```pip install -r requirements.txt```.
+5. Now change dir once more into the cloned repo via - `cd pm5n` and install the requirements for this extension using this command - `pip install -r requirements.txt`.
 
 6. Once installation completes, simply go back to the ComfyUI root and run comfy the way you normally do.
 
@@ -83,6 +83,9 @@ To read about all this in detail, please consider checking out the [expansion re
 
 The preview stack allows you to continuously queue up your workflow as you make changes,
 without destroying the previously generated preview image.
+
+This idea came from [AloeVera](https://github.com/PurpleBlueAloeVera) who was looking to have some of this functionality in one node.
+Big thanks to her for another fun little problem I could help solve.
 
 The goal is to allow folks to easily keep comparative score of their progress in the workflow tweaks. To that end, this node allows for the following:
 
