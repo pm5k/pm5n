@@ -1,11 +1,22 @@
 # from structlog import get_logger
 
 
+import folder_paths
 import os
+from pathlib import Path
 
-import pm5n.api  # noqa: F401
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+from nodes import SaveImage
+
+# Hack for pytest since we don't wanna import server in the tests.
+try:
+    import pm5n.api  # noqa: F401
+except ModuleNotFoundError:
+    pass
 from pm5n.database import session  # noqa: F401
 from pm5n.database.models.expansions import Expansion, Tag  # noqa: F401
+from pm5n.nodes.prompt import TextConcat, TextMulti
 
 
 def bootstrap_db():
@@ -59,12 +70,140 @@ class PromptNode:
             return ([[cond, {"pooled_output": pooled}]],)
 
 
+class StackingPreviewNode(SaveImage):
+    palette_map = {
+        "white": (255, 255, 255),
+        "black": (0, 0, 0),
+        "yellow": (255, 244, 189),
+        "red": (244, 185, 184),
+        "blue": (133, 210, 208),
+        "purple": (136, 123, 176),
+    }
+
+    def __init__(self):
+        self.output_dir = folder_paths.get_temp_directory()
+        self.type = "temp"
+        self.prefix = "tps_img"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "border_width": (
+                    "INT",
+                    {"default": 0, "min": 0, "max": 10, "step": 5},
+                ),
+                "border_color": ([k for k, v in cls.palette_map.items()],),
+                "label": ("STRING", {"default": ""}),
+                "purge_this_run": ("BOOLEAN", {"default": False}),
+            },
+            "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "save_images"
+    OUTPUT_NODE = True
+    CATEGORY = "pm5n"
+
+    def save_images(
+        self,
+        images: list,
+        label: str,
+        border_width: int,
+        border_color: str,
+        purge_this_run: bool,
+        **kwargs,
+    ):
+        (
+            full_output_folder,
+            filename,
+            counter,
+            subfolder,
+            _,
+        ) = folder_paths.get_save_image_path(
+            self.prefix, self.output_dir, images[0].shape[1], images[0].shape[0]
+        )
+        if purge_this_run:
+            for image in Path(full_output_folder).glob("*.png"):
+                image.unlink()
+
+        # Iterate over all incoming images and save them to the tmp dir
+        for new_img in images:
+            np_data = 255.0 * new_img.cpu().numpy()
+            img = Image.fromarray(np.clip(np_data, 0, 255).astype(np.uint8))
+            file = f"{filename}_{counter:05}_.png"
+
+            # Add a white border to the image if selected:
+            if border_width != 0:
+                if label:
+                    padding_top = 20
+                else:
+                    padding_top = 0
+                new_size = (
+                    img.width + border_width,
+                    img.height + border_width + padding_top,
+                )
+                img_w_border = Image.new(
+                    "RGB", new_size, self.palette_map[border_color]
+                )
+                # This centers the image using halfway points of border h/w
+                # But we should pad the top if there's a label
+                box = tuple((n - o) // 2 for n, o in zip(new_size, img.size))
+                if label:
+                    # Adjust box to include padding for label
+                    box = (
+                        box[0],
+                        box[1] + padding_top // 2,
+                    )
+                img_w_border.paste(img, box)
+                img = img_w_border
+
+                # Draw the label on the padded area
+                if label:
+                    font = ImageFont.truetype("arial.ttf", 16)
+                    draw = ImageDraw.Draw(img)
+                    text_width, text_height = draw.textsize(label, font)
+                    position = (
+                        (img.width - text_width) / 2,
+                        (padding_top - text_height) / 2,
+                    )
+                    draw.text(
+                        position,
+                        label,
+                        font=font,
+                        fill="white" if border_color == "black" else "black",
+                    )
+            img.save(os.path.join(full_output_folder, file), compress_level=4)
+            counter += 1
+
+        # Populate the list of all images in the tmp dir..
+        results = []
+        for image in Path(full_output_folder).glob("*.png"):
+            if not image.name.startswith(self.prefix):
+                continue
+            results.append(
+                {
+                    "filename": image.name,
+                    "subfolder": subfolder,
+                    "type": self.type,
+                }
+            )
+        return {"ui": {"images": results}}
+
+
 NODE_CLASS_MAPPINGS = {
-    "PromptNode": PromptNode,
+    "SuperPromptNode": PromptNode,
+    "TextConcat": TextConcat,
+    "TextMulti": TextMulti,
+    "PreviewStack": StackingPreviewNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PromptNode": "Super Prompt",
+    "SuperPromptNode": "PM5N: Super Prompt",
+    "TextConcat": "PM5N: Text Concatenate",
+    "TextMulti": "PM5N: Text Multiline",
+    "PreviewStack": "PM5N: Preview Stack",
 }
 
 WEB_DIRECTORY = "web"
