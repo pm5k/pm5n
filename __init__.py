@@ -3,12 +3,13 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/
 
 
-import folder_paths
 import os
 from pathlib import Path
 
+import folder_paths
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
 from nodes import SaveImage
 
 # Hack for pytest since we don't wanna import server in the tests.
@@ -165,7 +166,7 @@ class StackingPreviewNode(SaveImage):
                 if label:
                     font = ImageFont.truetype("arial.ttf", 16)
                     draw = ImageDraw.Draw(img)
-                    text_width, text_height = draw.textsize(label, font)
+                    text_width, text_height = font.getbbox(label)[2:]
                     position = (
                         (img.width - text_width) / 2,
                         (padding_top - text_height) / 2,
