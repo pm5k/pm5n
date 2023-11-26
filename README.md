@@ -111,10 +111,12 @@ The goal is to allow folks to easily keep comparative score of their progress in
 
 4.  **Purging the stack:** sometimes you will notice that the preview node will fill up with a huge amount of images as you work. There's a boolean toggle switch which will clear all of them the next time you generate something, thus resetting your grid to it's initial state. **Just remember to turn that toggle off after your grid clears and the initial first image is generated, or else you will only ever generate one image as with a normal preview node.**
 
+5.  **Saving the grid to output folder:** you can choose a filename and enable this flag in order to output the uncompressed grid image into a file inside the root comfy output folder.
+
 **Caveats:**
 
 - The stacking preview was made such that the front-end of Comfy deals with how the imagery is placed for the user. After all - the preview node already stacks stuff in boxes for batches of two or more. However, even though the stack images are numbered in sequence (99,999 images before the sequence resets) - sometimes they get auto-sized in weird ways. Just adjust the preview node until it looks alright-ish.
-- Changing sizes of your latent during generation is totally fine, but expect to see the Comfy UI handle this as best it can (rules of HTML and CSS) and still come out weird. Nothing you can really do outside of fiddling with the base css rulesets, which is out of scope for this node.
+- Changing sizes of your latent during generation is totally fine, but expect to see the Comfy UI handle this as best it can (rules of HTML and CSS) and still come out weird. Nothing you can really do outside of fiddling with the base css rulesets, which is out of scope for this node. Internally, generated grids will resize the outlier images to the size of the smallest member of the grid so this way it is at least consistent. This happens without the user's input. If you start your workflow with 256 by 256 images, then midway change to double that or some portrait/landscape aspects, those images will be squared to 256x256 by force inside the grid, the images generated in tmp/ remain unaffected and the correct size should you wish to yoink them out for some reason..
 - This node follows ComyUI's optimisation principles - if nothing significant changed in the output (generated image filename, input params for the node, other data used by the node) you may see the same image being shown to you. Adjust your params and it will work just fine.
 - I have removed metadata saving to these images for the time bein, it can be reintroduced on request.
 
