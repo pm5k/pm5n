@@ -99,8 +99,10 @@ class StackingPreviewNode(SaveImage):
                 ),
                 "border_color": ([k for k, v in cls.palette_map.items()],),
                 "label": ("STRING", {"default": ""}),
-                "purge_this_run": ("BOOLEAN", {"default": False}),
                 "grid_row_length": ("INT", {"default": 5, "min": 1, "max": 10}),
+                "purge_this_run": ("BOOLEAN", {"default": False}),
+                "save_grid_to_output": ("BOOLEAN", {"default": False}),
+                "grid_filename": ("STRING", {"default": "tps_img_grid.png"}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -133,6 +135,8 @@ class StackingPreviewNode(SaveImage):
         border_color: str,
         purge_this_run: bool,
         grid_row_length: int,
+        grid_filename: str,
+        save_grid_to_output: bool,
         **kwargs,
     ):
         (
@@ -149,6 +153,10 @@ class StackingPreviewNode(SaveImage):
         if purge_this_run:
             for image in Path(full_output_folder).glob("*.png"):
                 image.unlink()
+
+        # Delete previous grids from temp regardless of anything to save space..
+        for image in Path(full_output_folder).glob("*_grid.png"):
+            image.unlink()
 
         # Iterate over all incoming images and save them to the tmp dir
         for new_img in images:
@@ -238,14 +246,21 @@ class StackingPreviewNode(SaveImage):
                 img = img.resize((smallest.width, smallest.height))
             # Paste the image into the grid
             grid_img.paste(img, (col * img.width, row * img.height))
+
+        if save_grid_to_output:
+            grid_out_folder = folder_paths.get_output_directory()
+            grid_img.save(
+                os.path.join(grid_out_folder, f"{grid_filename}.png"),
+                compress_level=0,
+            )
         # Save the grid image to the output folder
         grid_img.save(
-            os.path.join(full_output_folder, f"{filename}_{counter}_grid.png"),
+            os.path.join(full_output_folder, f"{filename}_{counter:05}_grid.png"),
             compress_level=0,
         )
         results.append(
             {
-                "filename": f"{filename}_{counter}_grid.png",
+                "filename": f"{filename}_{counter:05}_grid.png",
                 "subfolder": subfolder,
                 "type": self.type,
             }
