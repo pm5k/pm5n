@@ -100,6 +100,7 @@ class StackingPreviewNode(SaveImage):
                 "border_color": ([k for k, v in cls.palette_map.items()],),
                 "label": ("STRING", {"default": ""}),
                 "purge_this_run": ("BOOLEAN", {"default": False}),
+                "grid_row_length": ("INT", {"default": 5, "min": 1, "max": 10}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -109,6 +110,21 @@ class StackingPreviewNode(SaveImage):
     OUTPUT_NODE = True
     CATEGORY = "pm5n"
 
+    """
+    TODO:
+
+    This is the new version that needs implementation.. Here are the steps:
+
+    1. Load all the images from the tmp folder that match the prefix
+    2. Iterate over them and derive their size based on width * height. Pick the smallest.
+    3. Count the images and calculate how many rows and columns we need to display them all based on row length var including padding and title dimensions if set.
+    4. Create a new image with the size of the smallest image * rows and columns.
+    5. Iterate over the images again, apply padding and title if these are set and paste them into the new image at coordinates calulated by row and column.
+    6. Save the new image to the output folder as well as return all the separate images for this session to the UI.
+
+    Extra consideration: The grid images need to be rotated in name when purging happens so they dont overwrite anything in the output..
+    """
+
     def save_images(
         self,
         images: list,
@@ -116,6 +132,7 @@ class StackingPreviewNode(SaveImage):
         border_width: int,
         border_color: str,
         purge_this_run: bool,
+        grid_row_length: int,
         **kwargs,
     ):
         (
@@ -127,6 +144,8 @@ class StackingPreviewNode(SaveImage):
         ) = folder_paths.get_save_image_path(
             self.prefix, self.output_dir, images[0].shape[1], images[0].shape[0]
         )
+
+        # Kill all images in the tmp dir if the user wants to purge this run
         if purge_this_run:
             for image in Path(full_output_folder).glob("*.png"):
                 image.unlink()
@@ -139,10 +158,7 @@ class StackingPreviewNode(SaveImage):
 
             # Add a white border to the image if selected:
             if border_width != 0:
-                if label:
-                    padding_top = 20
-                else:
-                    padding_top = 0
+                padding_top = 20 if label else 0
                 new_size = (
                     img.width + border_width,
                     img.height + border_width + padding_top,
@@ -182,8 +198,11 @@ class StackingPreviewNode(SaveImage):
 
         # Populate the list of all images in the tmp dir..
         results = []
+        grid_images: list[Image.Image] = []
         for image in Path(full_output_folder).glob("*.png"):
-            if not image.name.startswith(self.prefix):
+            if not image.name.startswith(self.prefix) or image.name.endswith(
+                "grid.png"
+            ):
                 continue
             results.append(
                 {
@@ -192,6 +211,46 @@ class StackingPreviewNode(SaveImage):
                     "type": self.type,
                 }
             )
+            grid_images.append(Image.open(image))
+
+        # Construct and save a grid image to the output folder
+        # First find the smallest image based on width * height
+        smallest = min(grid_images, key=lambda x: x.width * x.height)
+
+        # Construct a grid based on total count of images and row limit..
+        img_count = len(grid_images)
+        grid_width = (
+            grid_row_length * smallest.width
+            if img_count > grid_row_length
+            else img_count * smallest.width
+        )
+        grid_height = int(np.ceil(img_count / grid_row_length)) * smallest.height
+        grid_img = Image.new(
+            "RGB", (grid_width, grid_height), self.palette_map[border_color]
+        )
+        for i, img in enumerate(grid_images):
+            # Calculate row and column based on index and row length
+            row = i // grid_row_length
+            col = i % grid_row_length
+            # If image is of different size than the smallest image dimensions, make it scaled
+            # to the smallest image dimensions
+            if img.width != smallest.width or img.height != smallest.height:
+                img = img.resize((smallest.width, smallest.height))
+            # Paste the image into the grid
+            grid_img.paste(img, (col * img.width, row * img.height))
+        # Save the grid image to the output folder
+        grid_img.save(
+            os.path.join(full_output_folder, f"{filename}_{counter}_grid.png"),
+            compress_level=0,
+        )
+        results.append(
+            {
+                "filename": f"{filename}_{counter}_grid.png",
+                "subfolder": subfolder,
+                "type": self.type,
+            }
+        )
+
         return {"ui": {"images": results}}
 
 
